@@ -1,0 +1,29 @@
+{
+   "action": {
+      "default_icon": {
+         "128": "icon128.png",
+         "16": "icon128.png",
+         "32": "icon128.png",
+         "48": "icon128.png"
+      },
+      "default_popup": "popup.html",
+      "default_title": "Lift Log"
+   },
+   "description": "Progressive overload gym tracker — log sets, see your line go up.",
+   "icons": {
+      "128": "icon128.png",
+      "16": "icon128.png",
+      "32": "icon128.png",
+      "48": "icon128.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmhovkttE+fXwMGKO3LMTKLUaVbMx7DKgEDipOAF3rHEx6Z48/gEcH+qR0SSgAkyeIIW0dYcn9rtlQFczdaNxb/WWORD3Ts4a+f0PRMmoFmEBjio/CgCZ7HUYjh4YkQRQSPBAYLbjiBSlBmlnDQcDQzZT64SP0m77AYQ4NyjkPdrzdyx2M7Mei48P26k9Mq0s7ayPSYQuo/2F9iFcZ5xinmqH74lPan8Qqj8ihKjZt5BDU0mMIxqmLzzmNxUeUHIfCZA/JIiWRQfLMqYALinv5EEaQAyoXDqstS1UIopNnRA8HHujbkbBFHhPJp+Ak8xqI4rr57diDXIdad8JOP6bWQIDAQAB",
+   "manifest_version": 3,
+   "name": "Lift Log",
+   "oauth2": {
+      "client_id": "375900575460-8g2d264i2gmmb8qvnrh88djcfo4kr9rm.apps.googleusercontent.com",
+      "scopes": [ "https://www.googleapis.com/auth/drive.appdata" ]
+   },
+   "permissions": [ "identity" ],
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "1.1.1"
+}
