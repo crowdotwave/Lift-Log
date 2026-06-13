@@ -185,7 +185,7 @@ function csvEscape(v) {
 }
 function downloadCSV() {
   if (!data.length) return;
-  const rows = [["date","group","exercise","weight_kg","reps","sets"]];
+  const rows = [["date","group","exercise","weight_lbs","reps","sets"]];
   [...data].sort((a,b) => b.date.localeCompare(a.date)).forEach(s => {
     rows.push([s.date, s.group, s.exercise, s.weight, s.reps, s.sets]);
   });
@@ -226,7 +226,7 @@ function renderGroup(groupId) {
           <div class="ex-pills" id="ex-pills"></div>
         </div>
         <div class="row">
-          <div class="field"><label>Weight (kg)</label>
+          <div class="field"><label>Weight (lbs)</label>
             <input id="weight" type="number" step="0.5" inputmode="decimal" placeholder="0"/></div>
           <div class="field"><label>Reps</label>
             <input id="reps" type="number" inputmode="numeric" placeholder="0"/></div>
@@ -238,7 +238,7 @@ function renderGroup(groupId) {
       </section>
 
       <section class="card">
-        <h2>Progress — <span id="chart-title" class="gradient-text">${group.name}</span></h2>
+        <h2>Progress (Total Vol) — <span id="chart-title" class="gradient-text">${group.name}</span></h2>
         <div class="last-hint" id="last-hint" style="display:none;"></div>
         <div class="chart-wrap"><canvas id="chart"></canvas></div>
         <div class="history" id="history"></div>
@@ -287,7 +287,7 @@ function updateHint(groupId) {
   const last = lastSession(name, groupId);
   hint.style.display = "";
   if (!last) { hint.innerHTML = `No history for <b>${name}</b> yet — let's start.`; return; }
-  hint.innerHTML = `Last <b>${name}</b>: ${last.weight}kg × ${last.reps} × ${last.sets} on ${fmtDate(last.date)} → try <b>${(last.weight + 2.5)}kg</b>`;
+  hint.innerHTML = `Last <b>${name}</b>: ${last.weight}lbs × ${last.reps} × ${last.sets} on ${fmtDate(last.date)} → try <b>${(last.weight + 5)}lbs</b>`;
 }
 
 function addSet(groupId) {
@@ -304,7 +304,7 @@ function addSet(groupId) {
     date > todayISO();
   if (invalid) {
     $("add-btn").animate(
-      [{ transform:"translateX(0)" },{ transform:"translateX(-6px)" },{ transform:"translateX(6px)" },{ transform:"translateX(0)" }],
+      [{ transform:"translateX(0)" }, { transform:"translateX(-6px)" }, { transform:"translateX(6px)" }, { transform:"translateX(0)" }],
       { duration: 250 }
     );
     return;
@@ -342,7 +342,7 @@ function renderHistory(groupId) {
   container.innerHTML = list.map(s => `
     <div class="session">
       <div>
-        <div class="vals">${s.weight}kg × ${s.reps} × ${s.sets}</div>
+        <div class="vals">${s.weight}lbs × ${s.reps} × ${s.sets}</div>
         <div class="meta">${s.exercise} · ${fmtDate(s.date)}</div>
       </div>
       <button class="del" data-id="${s.id}" title="Delete">✕</button>
@@ -370,8 +370,14 @@ function renderChart(groupId) {
   const points = !filter ? [] : data
     .filter(s => s.group === groupId && s.exercise.toLowerCase() === filter)
     .sort((a,b) => a.date.localeCompare(b.date));
+  
   const byDate = {};
-  points.forEach(s => { if (!byDate[s.date] || s.weight > byDate[s.date]) byDate[s.date] = s.weight; });
+  points.forEach(s => { 
+    const volume = s.weight * s.reps * s.sets;
+    if (!byDate[s.date] || volume > byDate[s.date]) {
+      byDate[s.date] = volume; 
+    }
+  });
   const labels = Object.keys(byDate).sort();
   const values = labels.map(d => byDate[d]);
   drawChart(labels, values);
@@ -396,7 +402,7 @@ function drawChart(labels, values) {
     return;
   }
 
-  const pad = { l: 40, r: 16, t: 16, b: 28 };
+  const pad = { l: 45, r: 16, t: 16, b: 28 };
   const cw = W - pad.l - pad.r;
   const ch = H - pad.t - pad.b;
   const min = Math.min(...values);
