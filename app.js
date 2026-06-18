@@ -305,4 +305,415 @@ function renderLogForm(groupId) {
     `;
     $("date").value = todayISO();
     $("date").addEventListener("click", () => { try { $("date").showPicker(); } catch {} });
-    $("exercise").addEventListener("input",
+    $("exercise").addEventListener("input", () => {
+      updateHint(groupId); renderHistory(groupId); renderChart(groupId); refreshDatalist(groupId);
+    });
+    refreshDatalist(groupId);
+    updateHint(groupId);
+  } else {
+    // superset mode — exercise B searches all exercises across all groups
+    form.innerHTML = `
+      <div class="field">
+        <label>Exercise A (this group)</label>
+        <input id="exercise" placeholder="e.g. Bench Press" autocomplete="off"/>
+        <div class="ex-pills" id="ex-pills"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Weight (lbs)</label><input id="weight" type="number" step="0.5" inputmode="decimal" placeholder="0"/></div>
+        <div class="field"><label>Reps</label><input id="reps" type="number" inputmode="numeric" placeholder="0"/></div>
+        <div class="field"><label>Sets</label><input id="sets" type="number" inputmode="numeric" placeholder="1"/></div>
+      </div>
+
+      <div class="superset-divider">Paired with</div>
+
+      <div class="field">
+        <label>Exercise B (any group)</label>
+        <input id="exercise-b" placeholder="e.g. Bent Over Row" autocomplete="off"/>
+        <div class="ex-pills" id="ex-pills-b"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Weight (lbs)</label><input id="weight-b" type="number" step="0.5" inputmode="decimal" placeholder="0"/></div>
+        <div class="field"><label>Reps</label><input id="reps-b" type="number" inputmode="numeric" placeholder="0"/></div>
+      </div>
+
+      <div class="field"><label>Date</label><input id="date" type="date"/></div>
+    `;
+    $("date").value = todayISO();
+    $("date").addEventListener("click", () => { try { $("date").showPicker(); } catch {} });
+
+    $("exercise").addEventListener("input", () => {
+      updateHint(groupId); renderHistory(groupId); renderChart(groupId); refreshDatalist(groupId);
+    });
+    $("exercise-b").addEventListener("input", () => refreshDatalistB());
+
+    refreshDatalist(groupId);
+    refreshDatalistB();
+    updateHint(groupId);
+  }
+}
+
+function refreshDatalist(groupId) {
+  const pillsEl = $("ex-pills");
+  if (!pillsEl) return;
+  const list = exercisesIn(groupId);
+  const cur = selectedExercise.toLowerCase();
+  pillsEl.innerHTML = list.map(e =>
+    `<button type="button" data-ex="${e}" class="${e.toLowerCase()===cur?'active':''}">${e}</button>`
+  ).join("");
+  pillsEl.querySelectorAll("button").forEach(b => {
+    b.addEventListener("click", () => {
+      const same = selectedExercise.toLowerCase() === b.dataset.ex.toLowerCase();
+      selectedExercise = same ? "" : b.dataset.ex;
+      $("exercise").value = "";
+      updateHint(groupId); renderHistory(groupId); renderChart(groupId); refreshDatalist(groupId);
+    });
+  });
+}
+
+function refreshDatalistB() {
+  const pillsEl = $("ex-pills-b");
+  if (!pillsEl) return;
+  const list = allExercises();
+  const cur = selectedExerciseB.toLowerCase();
+  const query = ($("exercise-b")?.value || "").trim().toLowerCase();
+  const filtered = query ? list.filter(e => e.toLowerCase().includes(query)) : list;
+  pillsEl.innerHTML = filtered.slice(0,12).map(e =>
+    `<button type="button" data-ex="${e}" class="${e.toLowerCase()===cur?'active':''}">${e}</button>`
+  ).join("");
+  pillsEl.querySelectorAll("button").forEach(b => {
+    b.addEventListener("click", () => {
+      const same = selectedExerciseB.toLowerCase() === b.dataset.ex.toLowerCase();
+      selectedExerciseB = same ? "" : b.dataset.ex;
+      $("exercise-b").value = "";
+      refreshDatalistB();
+    });
+  });
+}
+
+function updateHint(groupId) {
+  const name = currentExercise();
+  const hint = $("last-hint");
+  if (!hint) return;
+  if (!name) { hint.style.display = "none"; return; }
+  const last = lastSession(name, groupId);
+  hint.style.display = "";
+  if (!last) { hint.innerHTML = `No history for <b>${name}</b> yet — let's start.`; return; }
+  hint.innerHTML = `Last <b>${name}</b>: ${last.weight}lbs × ${last.reps} × ${last.sets} on ${fmtDate(last.date)} → try <b>${last.weight+5}lbs</b>`;
+}
+
+function addSet(groupId) {
+  const date = $("date").value || todayISO();
+  if (date > todayISO()) { shake(); return; }
+
+  if (logMode === "superset") {
+    const exA = canonicalExercise(currentExercise(), groupId);
+    const weightA = parseFloat($("weight").value);
+    const repsA = parseInt($("reps").value);
+    const sets = parseInt($("sets").value);
+
+    const exBRaw = currentExercise("b");
+    // find which group exercise B belongs to, default to current group
+    const matchB = data.find(s => s.exercise.toLowerCase() === exBRaw.toLowerCase());
+    const groupB = matchB ? matchB.group : groupId;
+    const exB = canonicalExercise(exBRaw, groupB);
+    const weightB = parseFloat($("weight-b").value);
+    const repsB = parseInt($("reps-b").value);
+
+    const invalid =
+      !exA || !exB ||
+      isNaN(weightA)||weightA<0 || isNaN(repsA)||repsA<=0 ||
+      isNaN(weightB)||weightB<0 || isNaN(repsB)||repsB<=0 ||
+      isNaN(sets)||sets<=0||sets>100;
+    if (invalid) { shake(); return; }
+
+    const supersetId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+    data.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+1),
+      group: groupId, exercise: exA, weight: weightA, reps: repsA, sets, date, supersetId
+    });
+    data.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+2),
+      group: groupB, exercise: exB, weight: weightB, reps: repsB, sets, date, supersetId
+    });
+    save();
+    selectedExercise = exA;
+    selectedExerciseB = exB;
+    $("exercise").value = ""; $("weight").value = ""; $("reps").value = "";
+    $("exercise-b").value = ""; $("weight-b").value = ""; $("reps-b").value = "";
+    refreshDatalist(groupId); refreshDatalistB();
+    updateHint(groupId); renderHistory(groupId); renderChart(groupId);
+    refreshStreak(groupId); updateGlobalStats();
+
+  } else {
+    const exercise = canonicalExercise(currentExercise(), groupId);
+    const weight = parseFloat($("weight").value);
+    const reps = parseInt($("reps").value);
+    const sets = parseInt($("sets").value);
+    const invalid =
+      !exercise ||
+      isNaN(weight)||weight<0||weight>10000 ||
+      isNaN(reps)||reps<=0||reps>1000 ||
+      isNaN(sets)||sets<=0||sets>100;
+    if (invalid) { shake(); return; }
+    data.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
+      group: groupId, exercise, weight, reps, sets, date
+    });
+    save();
+    selectedExercise = exercise;
+    $("exercise").value = ""; $("weight").value = ""; $("reps").value = "";
+    refreshDatalist(groupId); updateHint(groupId);
+    renderHistory(groupId); renderChart(groupId);
+    refreshStreak(groupId); updateGlobalStats();
+  }
+}
+
+function shake() {
+  $("add-btn").animate(
+    [{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],
+    {duration:250}
+  );
+}
+
+function renderHistory(groupId) {
+  const filter = currentExercise().toLowerCase();
+  const container = $("history");
+  if (!filter) {
+    container.innerHTML = `<div class="empty">Select an exercise to see history.</div>`;
+    return;
+  }
+  const list = data
+    .filter(s => s.group === groupId && s.exercise.toLowerCase() === filter)
+    .sort((a,b) => b.date.localeCompare(a.date));
+  if (!list.length) {
+    container.innerHTML = `<div class="empty">No sessions yet for this exercise.</div>`;
+    return;
+  }
+
+  // Group supersets together
+  const rendered = new Set();
+  let html = "";
+  for (const s of list) {
+    if (rendered.has(s.id)) continue;
+    if (s.supersetId) {
+      // find the paired entry
+      const partner = data.find(p => p.supersetId === s.supersetId && p.id !== s.id);
+      html += `<div class="superset-group">
+        <div class="superset-label">Superset${partner ? ` · paired with ${partner.exercise}` : ""}</div>
+        ${sessionRowHTML(s, groupId)}
+        ${partner ? sessionRowHTML(partner, groupId) : ""}
+      </div>`;
+      rendered.add(s.id);
+      if (partner) rendered.add(partner.id);
+    } else {
+      html += sessionRowHTML(s, groupId);
+      rendered.add(s.id);
+    }
+  }
+  container.innerHTML = html;
+
+  container.querySelectorAll("button.del").forEach(b => {
+    b.addEventListener("click", () => {
+      const id = b.dataset.id;
+      const entry = data.find(s => s.id === id);
+      // if part of a superset, delete both
+      if (entry?.supersetId) {
+        const paired = data.filter(s => s.supersetId === entry.supersetId);
+        paired.forEach(s => { if (window.LiftLogSync) window.LiftLogSync.addTombstone(s.id); });
+        data = data.filter(s => s.supersetId !== entry.supersetId);
+      } else {
+        if (window.LiftLogSync) window.LiftLogSync.addTombstone(id);
+        data = data.filter(s => s.id !== id);
+      }
+      save();
+      refreshDatalist(groupId); renderHistory(groupId); renderChart(groupId);
+      refreshStreak(groupId); updateGlobalStats();
+    });
+  });
+}
+
+function sessionRowHTML(s, groupId) {
+  const pr = isPR(s);
+  const vol = (s.weight * s.reps * s.sets).toLocaleString();
+  return `
+    <div class="session">
+      <div>
+        <div class="vals">
+          ${s.weight}lbs × ${s.reps} × ${s.sets}
+          ${pr ? '<span class="pr-badge">PR</span>' : ''}
+        </div>
+        <div class="meta">${s.exercise} · ${fmtDate(s.date)}</div>
+      </div>
+      <div class="session-vol">${vol} vol</div>
+      <button class="del" data-id="${s.id}" title="Delete">✕</button>
+    </div>`;
+}
+
+function renderChart(groupId) {
+  const filter = currentExercise().toLowerCase();
+  const title = filter ? currentExercise() : GROUPS.find(g=>g.id===groupId).name;
+  $("chart-title").textContent = title;
+
+  const points = !filter ? [] : data
+    .filter(s => s.group === groupId && s.exercise.toLowerCase() === filter)
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  let labels, values;
+  if (chartMode === "volume") {
+    const byDate = {};
+    points.forEach(s => { byDate[s.date] = (byDate[s.date]||0) + s.weight*s.reps*s.sets; });
+    labels = Object.keys(byDate).sort();
+    values = labels.map(d => byDate[d]);
+  } else {
+    const byDate = {};
+    points.forEach(s => { if (!byDate[s.date]||s.weight>byDate[s.date]) byDate[s.date]=s.weight; });
+    labels = Object.keys(byDate).sort();
+    values = labels.map(d => byDate[d]);
+  }
+  drawChart(labels, values);
+}
+
+function drawChart(labels, values) {
+  const canvas = $("chart");
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0,0,W,H);
+
+  const accent    = chartMode==="volume" ? "#a78bfa" : "#3b82f6";
+  const fillColor = chartMode==="volume" ? "rgba(167,139,250,0.35)" : "rgba(59,130,246,0.35)";
+  const dotColor  = chartMode==="volume" ? "#c4b5fd" : "#38bdf8";
+
+  if (!values.length) {
+    ctx.fillStyle="#8a8a96"; ctx.font="14px -apple-system,sans-serif"; ctx.textAlign="center";
+    ctx.fillText("No data yet — log a set to see your progress", W/2, H/2);
+    return;
+  }
+
+  const pad={l:45,r:16,t:16,b:28};
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  const min=Math.min(...values), max=Math.max(...values);
+  const range=max-min||1;
+  const yMin=Math.max(0,min-range*0.2), yMax=max+range*0.2;
+
+  ctx.strokeStyle="rgba(255,255,255,0.06)"; ctx.lineWidth=1;
+  ctx.font="11px -apple-system,sans-serif"; ctx.fillStyle="#8a8a96"; ctx.textAlign="right";
+  for (let i=0;i<=4;i++) {
+    const y=pad.t+(ch*i/4), v=yMax-((yMax-yMin)*i/4);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    const lbl = chartMode==="volume" ? (v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)) : v.toFixed(0);
+    ctx.fillText(lbl, pad.l-6, y+4);
+  }
+
+  const xAt = i => pad.l+(values.length===1?cw/2:cw*i/(values.length-1));
+  const yAt = v => pad.t+ch*(1-(v-yMin)/(yMax-yMin));
+
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+  grad.addColorStop(0,fillColor); grad.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.beginPath(); ctx.moveTo(xAt(0),pad.t+ch);
+  values.forEach((v,i)=>ctx.lineTo(xAt(i),yAt(v)));
+  ctx.lineTo(xAt(values.length-1),pad.t+ch); ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+
+  ctx.strokeStyle=accent; ctx.lineWidth=2.5; ctx.lineJoin="round";
+  ctx.beginPath();
+  values.forEach((v,i)=>{ i===0?ctx.moveTo(xAt(i),yAt(v)):ctx.lineTo(xAt(i),yAt(v)); });
+  ctx.stroke();
+
+  values.forEach((v,i)=>{
+    ctx.beginPath(); ctx.arc(xAt(i),yAt(v),4,0,Math.PI*2);
+    ctx.fillStyle="#07101f"; ctx.fill();
+    ctx.strokeStyle=dotColor; ctx.lineWidth=2; ctx.stroke();
+  });
+
+  ctx.fillStyle="#8a8a96"; ctx.textAlign="center";
+  const step=Math.max(1,Math.ceil(labels.length/6));
+  labels.forEach((l,i)=>{
+    if (i%step!==0&&i!==labels.length-1) return;
+    ctx.fillText(fmtDateShort(l), xAt(i), H-8);
+  });
+}
+
+/* ---------- Router ---------- */
+function route() {
+  const hash = location.hash.replace(/^#\/?/,"");
+  if (!hash||hash==="home") return renderHome();
+  if (GROUP_IDS.includes(hash)) return renderGroup(hash);
+  location.hash="#/";
+}
+window.addEventListener("hashchange", route);
+window.addEventListener("resize", () => {
+  if ($("chart")) {
+    const hash = location.hash.replace(/^#\/?/,"");
+    if (GROUP_IDS.includes(hash)) renderChart(hash);
+  }
+});
+
+function openSyncMenu(anchor) {
+  document.getElementById("sync-menu")?.remove();
+  const rect = anchor.getBoundingClientRect();
+  const menu = document.createElement("div");
+  menu.id = "sync-menu";
+  menu.style.cssText = `position:fixed;top:${rect.bottom+6}px;right:${window.innerWidth-rect.right}px;background:#0d1a2e;border:1px solid rgba(120,180,255,0.2);border-radius:10px;padding:6px;z-index:60;box-shadow:0 12px 36px rgba(0,0,0,0.5);min-width:180px;`;
+  menu.innerHTML = `
+    <div style="padding:10px 14px;font-size:12px;color:#8ea0bc;border-bottom:1px solid rgba(120,180,255,0.1);">Synced with Google</div>
+    <button type="button" id="sync-out" style="width:100%;text-align:left;padding:10px 14px;background:transparent;color:#e7f0ff;border:0;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;box-shadow:none;">Sign out</button>
+  `;
+  document.body.appendChild(menu);
+  menu.querySelector("#sync-out").addEventListener("click", async () => {
+    menu.remove();
+    await window.LiftLogSync.signOut();
+    showSyncBanner("Signed out. Switched to local-only mode.");
+  });
+  setTimeout(() => {
+    document.addEventListener("click", function close(ev) {
+      if (!menu.contains(ev.target)&&ev.target!==anchor) {
+        menu.remove(); document.removeEventListener("click", close);
+      }
+    });
+  }, 0);
+}
+
+function showSyncBanner(text) {
+  let el = document.getElementById("sync-banner");
+  if (!el) {
+    el = document.createElement("div"); el.id="sync-banner";
+    el.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:520px;padding:14px 20px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.4);border-radius:12px;color:#cfe1ff;font-size:14px;line-height:1.4;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,0.4);";
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  clearTimeout(showSyncBanner._t);
+  showSyncBanner._t = setTimeout(()=>el.remove(), 5000);
+}
+
+function renderSyncBtn() {
+  const btn = document.getElementById("sync-btn");
+  if (!btn||!window.LiftLogSync) return;
+  const s = window.LiftLogSync.state();
+  btn.classList.toggle("on", s.signedIn);
+  btn.classList.toggle("syncing", s.syncing);
+  btn.textContent = s.syncing ? "Syncing…" : (s.signedIn ? "Synced with Google" : "Sign in with Google");
+  btn.title = s.signedIn ? "Click to sign out" : "Sign in with Google";
+}
+if (window.LiftLogSync) {
+  window.LiftLogSync.onChange(renderSyncBtn);
+  renderSyncBtn();
+  document.getElementById("sync-btn").addEventListener("click", async (e) => {
+    const s = window.LiftLogSync.state();
+    if (s.signedIn) { openSyncMenu(e.currentTarget); return; }
+    const r = await window.LiftLogSync.signIn();
+    if (!r.ok&&r.reason==="not-available") {
+      showSyncBanner("Cloud sync is under development and coming soon. Your data is safely stored on this device.");
+    }
+  });
+  window.addEventListener("liftlog:synced", () => {
+    reloadFromStorage(); updateGlobalStats(); route();
+  });
+}
+
+updateGlobalStats();
+route();
