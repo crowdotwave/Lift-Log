@@ -343,6 +343,75 @@
   .sync-btn.syncing { opacity: 0.6; }
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+  /* deeper black theme overrides */
+:root {
+  --bg: #000000;
+  --bg-2: #0a0a0a;
+  --card: rgba(255,255,255,0.03);
+  --card-border: rgba(255,255,255,0.08);
+}
+
+/* weight + increment buttons row */
+.weight-row {
+  display: flex; gap: 6px; align-items: center;
+}
+.inc-btn {
+  width: auto; flex-shrink: 0;
+  padding: 10px 10px; font-size: 12px; font-weight: 700;
+  background: rgba(59,130,246,0.12); color: #60a5fa;
+  border: 1px solid rgba(59,130,246,0.25); border-radius: 8px;
+  box-shadow: none; letter-spacing: 0;
+  transition: background 0.15s;
+}
+.inc-btn:hover { background: rgba(59,130,246,0.25); transform: none; box-shadow: none; }
+
+/* chart legend */
+.chart-legend {
+  display: flex; gap: 16px; padding: 6px 4px 2px;
+  font-size: 12px; color: #6b7280;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* superset styles */
+.mode-toggle {
+  display: flex; gap: 6px; margin-bottom: 16px;
+}
+.mode-toggle button {
+  flex: 1; padding: 8px; font-size: 12px; font-weight: 700;
+  background: rgba(0,0,0,0.4); color: #6b7280;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+  box-shadow: none; letter-spacing: 0.05em; text-transform: uppercase;
+}
+.mode-toggle button.active {
+  background: rgba(59,130,246,0.15); color: #60a5fa;
+  border-color: rgba(59,130,246,0.3); box-shadow: none;
+}
+.mode-toggle button:hover { transform: none; box-shadow: none; }
+.superset-divider {
+  display: flex; align-items: center; gap: 8px;
+  margin: 4px 0 14px; color: #6b7280; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.superset-divider::before, .superset-divider::after {
+  content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06);
+}
+.superset-group {
+  border: 1px solid rgba(167,139,250,0.2);
+  border-left: 3px solid #a78bfa;
+  border-radius: 10px; margin-bottom: 8px; overflow: hidden;
+}
+.superset-group .session {
+  border: none; border-radius: 0; margin-bottom: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.superset-group .session:last-child { border-bottom: none; }
+.superset-label {
+  font-size: 10px; font-weight: 700; color: #a78bfa;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 5px 14px; background: rgba(167,139,250,0.06);
+  border-bottom: 1px solid rgba(167,139,250,0.1);
+}
 </style>
 </head>
 <body>
