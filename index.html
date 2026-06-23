@@ -412,6 +412,51 @@
   padding: 5px 14px; background: rgba(167,139,250,0.06);
   border-bottom: 1px solid rgba(167,139,250,0.1);
 }
+  /* session cards */
+.session-card {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.session-card-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.session-card-date { font-size: 13px; font-weight: 600; color: #e5e7eb; }
+.session-card-partner { font-size: 11px; color: #a78bfa; margin-top: 2px; }
+.session-card-stats { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.stat-pill {
+  font-size: 11px; font-weight: 600; padding: 3px 8px;
+  border-radius: 20px; background: rgba(59,130,246,0.12);
+  color: #60a5fa; border: 1px solid rgba(59,130,246,0.2);
+}
+.vol-pill { background: rgba(167,139,250,0.1); color: #c4b5fd; border-color: rgba(167,139,250,0.2); }
+
+/* set pyramid rows */
+.set-pyramid { padding: 6px 14px 10px; display: flex; flex-direction: column; gap: 4px; }
+.set-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: #9ca3af; padding: 3px 0;
+}
+.set-peak { color: #e5e7eb; }
+.set-backoff { opacity: 0.5; }
+.set-weight { font-weight: 700; min-width: 52px; }
+.set-reps { color: #6b7280; }
+.set-tag {
+  font-size: 10px; font-weight: 700; padding: 1px 6px;
+  border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.peak-tag { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.backoff-tag { background: rgba(107,114,128,0.15); color: #6b7280; }
+.set-del {
+  width: auto; background: transparent; color: #374151;
+  padding: 2px 6px; box-shadow: none; font-size: 12px;
+  margin-left: auto;
+}
+.set-del:hover { color: #ef4444; transform: none; box-shadow: none; }
 </style>
 </head>
 <body>
